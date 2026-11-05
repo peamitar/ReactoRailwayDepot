@@ -211,6 +211,7 @@ setU();addEventListener('resize',setU);addEventListener('orientationchange',()=>
 const $=s=>document.querySelector(s), $$=s=>[...document.querySelectorAll(s)];
 const P={
 expand:'<path d="M8 3H5a2 2 0 0 0-2 2v3m18 0V5a2 2 0 0 0-2-2h-3m0 18h3a2 2 0 0 0 2-2v-3M3 16v3a2 2 0 0 0 2 2h3"/>',
+hand:'<path d="M18 11V6a2 2 0 0 0-2-2a2 2 0 0 0-2 2"/><path d="M14 10V4a2 2 0 0 0-2-2a2 2 0 0 0-2 2v2"/><path d="M10 10.5V6a2 2 0 0 0-2-2a2 2 0 0 0-2 2v8"/><path d="M18 8a2 2 0 1 1 4 0v6a8 8 0 0 1-8 8h-2c-2.5 0-4-1-5.9-2.9L3.4 16a2 2 0 0 1 3.2-2.4L8 15"/>',
 wrench:'<path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z"/>',
 drop:'<path d="M12 22a7 7 0 0 0 7-7c0-2-1-3.9-3-5.5s-3.5-4-4-6.5c-.5 2.5-2 4.9-4 6.5C6 11.1 5 13 5 15a7 7 0 0 0 7 7z"/>',
 bulb:'<path d="M15 14c.2-1 .7-1.7 1.5-2.5 1-.9 1.5-2.2 1.5-3.5A6 6 0 0 0 6 8c0 1 .2 2.2 1.5 3.5.7.7 1.3 1.5 1.5 2.5M9 18h6M10 22h4"/>',
@@ -255,15 +256,15 @@ function say(t){try{speechSynthesis.cancel();speechSynthesis.speak(new SpeechSyn
 function setProg(p){$('#prog').style.width=Math.round(p*100)+'%'}
 function ready(ok){$('#deploy').disabled=!ok}
 function unit(cls,inner){return `<div class="u ${cls}">${inner}</div>`}
-function pickTool(t){st.tool=t;$$('.tool[data-t]').forEach(x=>x.classList.toggle('sel',x.dataset.t===t))}
+function pickTool(t){st.tool=t;sfx('sel_'+t);$$('.tool[data-t]').forEach(x=>x.classList.toggle('sel',x.dataset.t===t))}
 
-$$('.mode').forEach(b=>b.onclick=()=>{mode=b.dataset.m;$('#sIcon').innerHTML=I(M[mode].icon);$('#sIcon').style.backgroundImage=b.querySelector('.ic').style.backgroundImage;$('#sTitle').textContent=M[mode].name;$('#sDesc').textContent=M[mode].desc;show('start')});
+$$('.mode').forEach(b=>b.onclick=()=>{sfx('pop');mode=b.dataset.m;$('#sIcon').innerHTML=I(M[mode].icon);$('#sIcon').style.backgroundImage=b.querySelector('.ic').style.backgroundImage;$('#sTitle').textContent=M[mode].name;$('#sDesc').textContent=M[mode].desc;show('start')});
 $$('[data-home]').forEach(b=>b.onclick=()=>show('home'));
-$('#startBtn').onclick=()=>{$('#pTag').textContent=M[mode].name;$('#trainWrap').innerHTML='';$('#controls').innerHTML='';$('#road').style.animationDuration='0s';setProg(0);ready(false);show('play');({eng,spell,clean})[mode]()};
+$('#startBtn').onclick=()=>{sfx('start');$('#pTag').textContent=M[mode].name;$('#trainWrap').innerHTML='';$('#controls').innerHTML='';$('#road').style.animationDuration='0s';setProg(0);ready(false);show('play');({eng,spell,clean})[mode]()};
 $('#quit').onclick=()=>show('home');
 $('#again').onclick=()=>$('#startBtn').click();
-$('#deploy').onclick=()=>{if($('#deploy').disabled)return;beep(660,.3);$('.train').classList.add('go');$('#road').style.animationDuration='.3s';
- setTimeout(()=>{$('#dMsg').textContent=st.msg||'Great job, engineer!';show('done')},1400)};
+$('#deploy').onclick=()=>{if($('#deploy').disabled)return;sfx('deploy');$('.train').classList.add('go');$('#road').style.animationDuration='.3s';
+ setTimeout(()=>{$('#dMsg').textContent=st.msg||'Great job, engineer!';show('done');sfx('win')},1400)};
 
 /* Mode 1 */
 function eng(){
@@ -271,16 +272,16 @@ function eng(){
  const faults=[{id:'lamp',tool:'bulb',icon:'sun',x:'4%',y:'50%',host:0,name:'Headlight'},{id:'link',tool:'wrench',icon:'link',x:'104%',y:'50%',host:0,name:'Coupling'},{id:'fan',tool:'drop',icon:'fan',x:'50%',y:'50%',host:1,name:'Roof fan'}];
  $('#trainWrap').innerHTML=`<div class="train">`+[0,1,2].map(i=>unit(i?'':'loco',`<div class="stripe"></div><div class="panel"></div>${i==0?'<div class="win"></div>':''}`+faults.filter(f=>f.host==i).map(f=>`<button class="spot bad" data-f="${f.id}" style="left:${f.x};top:${f.y}">${I(f.icon)}<span class="nm">${f.name}</span></button>`).join(''))).join('')+`</div>`;
  $('#controls').innerHTML=`<div class="tools"><button class="tool" data-t="wrench"><em>${I('wrench')}</em>Wrench</button><button class="tool" data-t="drop"><em>${I('drop')}</em>Oil</button><button class="tool" data-t="bulb"><em>${I('bulb')}</em>Bulb</button><button class="tool" id="thr" disabled><em>${I('gauge')}</em><span id="spd">Stop</span></button><button class="tool" id="horn"><em>${I('horn')}</em>Horn</button><button class="tool" id="lamp"><em>${I('sun')}</em>Lights</button></div>`;
- const upd=()=>{const n=Object.keys(st.fixed).length;setProg(n/3);ready(n==3);$('#thr').disabled=n<3;$('#status').textContent=n<3?`${n}/3 fixed. Tap a glowing part to fix it.`:'All fixed! Try the throttle, then Deploy.'};
+ const upd=()=>{const n=Object.keys(st.fixed).length;setProg(n/3);ready(n==3);if(n==3&&!st.all){st.all=1;setTimeout(()=>sfx('win'),350)}$('#thr').disabled=n<3;$('#status').textContent=n<3?`${n}/3 fixed. Tap a glowing part to fix it.`:'All fixed! Try the throttle, then Deploy.'};
  $$('.tool[data-t]').forEach(b=>b.onclick=()=>pickTool(b.dataset.t));
  $$('.spot').forEach(b=>b.onclick=()=>{const f=faults.find(x=>x.id===b.dataset.f);if(st.fixed[f.id]||b.classList.contains('fixing'))return;
-  if(!st.tool){toast(`Pick a tool to fix the ${f.name}`);shake(b);return}
-  if(st.tool!==f.tool){toast(`The ${f.name} needs a different tool`);shake(b);beep(150,.2);return}
-  b.classList.add('fixing');beep(660,.1);const r=b.getBoundingClientRect();fx(r.left+r.width/2,r.top+r.height/2,'spark',10);
-  setTimeout(()=>{st.fixed[f.id]=1;b.className='spot ok';b.querySelector('svg').outerHTML=I('check');fx(r.left+r.width/2,r.top+r.height/2,'spark',6);beep(880,.12);toast(`${f.name} fixed!`);upd()},750)});
- $('#thr').onclick=()=>{st.sp=(st.sp+1)%4;$('#spd').textContent=['Stop','Slow','Medium','Fast'][st.sp];$('#road').style.animationDuration=st.sp?(2.4-st.sp*.7)+'s':'0s'};
- $('#horn').onclick=()=>{beep(330,.35);setTimeout(()=>beep(392,.35),120)};
- $('#lamp').onclick=()=>{st.light=!st.light;$('#lamp').classList.toggle('off',!st.light)};
+  if(!st.tool){toast(`Pick a tool to fix the ${f.name}`);shake(b);sfx('err');return}
+  if(st.tool!==f.tool){toast(`The ${f.name} needs a different tool`);shake(b);sfx('err');return}
+  b.classList.add('fixing');sfx('fix_'+f.tool);const r=b.getBoundingClientRect();fx(r.left+r.width/2,r.top+r.height/2,'spark',10);
+  setTimeout(()=>{st.fixed[f.id]=1;b.className='spot ok';b.querySelector('svg').outerHTML=I('check');fx(r.left+r.width/2,r.top+r.height/2,'spark',6);sfx('ok');toast(`${f.name} fixed!`);upd()},750)});
+ $('#thr').onclick=()=>{st.sp=(st.sp+1)%4;sfx('thr',st.sp);$('#spd').textContent=['Stop','Slow','Medium','Fast'][st.sp];$('#road').style.animationDuration=st.sp?(2.4-st.sp*.7)+'s':'0s'};
+ $('#horn').onclick=()=>sfx('horn');
+ $('#lamp').onclick=()=>{sfx('lamp');st.light=!st.light;$('#lamp').classList.toggle('off',!st.light)};
  upd();
 }
 
@@ -294,20 +295,22 @@ function spell(){
  $('#controls').innerHTML=`<div class="tools">`+tiles.map(c=>`<button class="tool" data-c="${c}" style="font-size:24px">${c}</button>`).join('')+`</div>`;
  $('#status').textContent='Spell: '+'_ '.repeat(w.length).trim();
  $$('#controls .tool').forEach(b=>b.onclick=()=>{if(b.disabled)return;
-  if(b.dataset.c!==w[st.i]){shake(b);beep(150,.2);toast('Not this one, try another letter');return}
+  if(b.dataset.c!==w[st.i]){shake(b);sfx('err');toast('Not this one, try another letter');return}
   const u=$$('.u')[st.i];u.className='u fill pop'+(st.i?'':' loco');u.style.background=COLS[st.i%COLS.length];u.querySelector('.lt').textContent=b.dataset.c;
-  b.disabled=true;beep(520+st.i*110,.15);say(b.dataset.c);st.i++;setProg(st.i/w.length);
+  b.disabled=true;sfx('letter',st.i);say(b.dataset.c);st.i++;setProg(st.i/w.length);
   $('#status').textContent=[...w].map((c,i)=>i<st.i?c:'_').join(' ');
-  if(st.i==w.length){ready(true);toast('Word complete! Hit Deploy');setTimeout(()=>say(w),500)}});
+  if(st.i==w.length){ready(true);toast('Word complete! Hit Deploy');setTimeout(()=>sfx('win'),400);setTimeout(()=>say(w),1300)}});
 }
 
-/* Mode 3: touch scrubbing */
+/* Mode 3: touch scrubbing + auto buttons */
 function clean(){
- st={tool:'sponge',used:{},msg:'Sparkling clean! The train looks brand new.',done:false};
+ st={tool:'sponge',m:'touch',used:{},msg:'Sparkling clean! The train looks brand new.',done:false,next:'sponge'};
  $('#trainWrap').innerHTML=`<div class="train" id="tr">`+[0,1,2,3].map(i=>unit(i?'':'loco',`<div class="stripe"></div><div class="panel"></div>`)).join('')+`</div>`;
- $('#controls').innerHTML=`<div class="tools"><button class="tool sel" data-t="sponge"><em>${I('bubbles')}</em>Sponge</button><button class="tool" data-t="water"><em>${I('drop')}</em>Water</button><button class="tool" data-t="towel"><em>${I('wind')}</em>Towel</button></div>`;
- $$('.tool[data-t]').forEach(b=>b.onclick=()=>pickTool(b.dataset.t));
- $('#status').textContent='Rub the mud with your finger!';
+ $('#controls').innerHTML=`<div class="tools"><button class="tool sel" data-t="sponge"><em>${I('bubbles')}</em>Sponge</button><button class="tool" data-t="water"><em>${I('drop')}</em>Water</button><button class="tool" data-t="towel"><em>${I('wind')}</em>Towel</button><button class="tool" id="mt"><em>${I('hand')}</em><span>Touch</span></button></div>`;
+ $$('.tool[data-t]').forEach(b=>b.onclick=()=>{pickTool(b.dataset.t);if(st.m==='auto'&&st.auto)st.auto(b.dataset.t)});
+ $('#mt').onclick=()=>{st.m=st.m==='auto'?'touch':'auto';$('#mt').innerHTML=`<em>${I(st.m==='auto'?'play':'hand')}</em><span>${st.m==='auto'?'Auto':'Touch'}</span>`;
+  toast(st.m==='auto'?'Auto: tap a tool and watch it clean':'Touch: rub the screen with your finger');$('#tr').style.cursor=st.m==='auto'?'default':'grab'};
+ $('#status').textContent='Rub the mud with your finger, or switch to Auto!';
  requestAnimationFrame(()=>{
   const tr=$('#tr');if(!tr)return;const W=tr.offsetWidth,H=tr.offsetHeight,dpr=Math.min(2,window.devicePixelRatio||1);
   const mk=z=>{const c=document.createElement('canvas');c.width=W*dpr;c.height=H*dpr;c.className='cv';c.style.zIndex=z;tr.appendChild(c);const x=c.getContext('2d');x.scale(dpr,dpr);x.lineCap=x.lineJoin='round';return [c,x]};
@@ -324,22 +327,32 @@ function clean(){
   const check=()=>{if(st.done)return;const d=cover(cd)/base,f=cover(cf)/base,s=cover(cs)/base;
    const dd=d<.06,ff=f<.06,ss=s<.06;
    setProg((1-Math.min(1,d))*.5+(dd?((1-Math.min(1,f))*.25+(1-Math.min(1,s))*.25):0));
-   let next=!dd?'sponge':!ff?'water':!ss?'towel':null;
+   const next=!dd?'sponge':!ff?'water':!ss?'towel':null;
+   if(st.next&&next&&next!==st.next){sfx('ding')}
+   st.next=next;
    $('#status').textContent=!dd?'Scrub the mud off with the sponge':!ff?'Rinse the foam away with water':!ss?'Dry it with the towel':'';
-   if(st.used.sponge&&dd&&st.tool==='sponge'&&!st.hinted){st.hinted=1;pickTool('water')}
-   if(st.used.water&&ff&&st.tool==='water'&&!st.hinted2){st.hinted2=1;pickTool('towel')}
-   if(dd&&ff&&ss&&st.used.sponge&&st.used.water&&st.used.towel){st.done=true;ready(true);setProg(1);$('#status').textContent='Spotless! Hit Deploy.';toast('Squeaky clean! Hit Deploy');beep(880,.25);
+   if(st.m==='touch'){if(next&&st.tool!==next&&st.used[st.tool])pickTool(next)}
+   if(dd&&ff&&ss&&st.used.sponge&&st.used.water&&st.used.towel){st.done=true;ready(true);setProg(1);$('#status').textContent='Spotless! Hit Deploy.';toast('Squeaky clean! Hit Deploy');sfx('win');
     $$('#tr .u').forEach(u=>{u.classList.add('clean');const r=u.getBoundingClientRect();fx(r.left+r.width/2,r.top+r.height/2,'spark',5)})}};
   let last=null,drag=false,tick=0;
   const pos=e=>{const r=tr.getBoundingClientRect();return PORT()?[e.clientY-r.top,r.right-e.clientX]:[e.clientX-r.left,e.clientY-r.top]};
   const seg=(a,b,e)=>{const t=st.tool,dist=Math.hypot(b[0]-a[0],b[1]-a[1]);st.used[t]=1;
+   const nw=performance.now();if(nw-(st.ls||0)>120){st.ls=nw;sfx('s_'+t)}
    const line=(x,w,op)=>{x.globalCompositeOperation=op;x.lineWidth=w;x.beginPath();x.moveTo(a[0],a[1]);x.lineTo(b[0],b[1]);x.stroke()};
    if(t==='sponge'){line(xd,40,'destination-out');xf.globalCompositeOperation='source-over';for(let i=0;i<=dist/9;i++){const k=dist?i*9/dist:0,px=a[0]+(b[0]-a[0])*k+(Math.random()-.5)*22,py=a[1]+(b[1]-a[1])*k+(Math.random()-.5)*22;xf.beginPath();xf.arc(px,py,4+Math.random()*7,0,7);xf.fillStyle='rgba(255,255,255,.95)';xf.fill();xf.strokeStyle='rgba(132,216,252,.9)';xf.lineWidth=1.4;xf.stroke()}
     if(Math.random()<.35)fx(e.clientX,e.clientY,'bubble')}
    else if(t==='water'){line(xf,48,'destination-out');xs.strokeStyle='rgba(132,216,252,.55)';line(xs,48,'source-over');if(Math.random()<.4)fx(e.clientX,e.clientY,'drop')}
    else{line(xs,48,'destination-out');if(Math.random()<.3)fx(e.clientX,e.clientY,'spark')}};
-  tr.addEventListener('pointerdown',e=>{if(st.done)return;drag=true;tr.setPointerCapture(e.pointerId);last=pos(e);seg(last,[last[0]+.1,last[1]],e)});
-  tr.addEventListener('pointermove',e=>{if(!drag||st.done)return;const p=pos(e);seg(last,p,e);last=p;if(++tick%12==0)check()});
+  st.auto=t=>{if(st.done||st.busy)return;
+   if(st.next&&t!==st.next){toast(`Use the ${st.next} first`);sfx('err');return}
+   st.busy=1;const D=2400,t0=performance.now();let prev=null;
+   const scr=(x,y)=>{const r=tr.getBoundingClientRect();return PORT()?{clientX:r.right-y,clientY:r.top+x}:{clientX:r.left+x,clientY:r.top+y}};
+   const step=now=>{const p=Math.min(1,(now-t0)/D),k=Math.min(3,Math.floor(p*4)),q=p*4-k,cur=[(k%2?1-q:q)*W,(k%2?.72:.28)*H];
+    if(prev)seg(prev,cur,scr(cur[0],cur[1]));prev=cur;
+    if(p<1)requestAnimationFrame(step);else{st.busy=0;check()}};
+   requestAnimationFrame(step)};
+  tr.addEventListener('pointerdown',e=>{if(st.done||st.m==='auto')return;drag=true;tr.setPointerCapture(e.pointerId);last=pos(e);seg(last,[last[0]+.1,last[1]],e)});
+  tr.addEventListener('pointermove',e=>{if(!drag||st.done||st.m==='auto')return;const p=pos(e);seg(last,p,e);last=p;if(++tick%12==0)check()});
   const end=()=>{drag=false;check()};tr.addEventListener('pointerup',end);tr.addEventListener('pointercancel',end);
   check();
  });
@@ -350,6 +363,40 @@ function goFull(){const d=document.documentElement;try{const p=(d.requestFullscr
 function noFull(){try{(document.exitFullscreen||document.webkitExitFullscreen).call(document)}catch(e){}}
 const isFull=()=>document.fullscreenElement||document.webkitFullscreenElement;
 addEventListener('pointerdown',()=>{if(!isFull())goFull()});
+/* ---- Sound engine (synthesized, no files) ---- */
+let AC,MG;
+function ac(){if(!AC){AC=new (window.AudioContext||window.webkitAudioContext)();MG=AC.createGain();MG.gain.value=.9;MG.connect(AC.destination)}if(AC.state==='suspended')AC.resume();return AC}
+function tone(f,d,type='square',v=.08,t0=0,slide=0){try{const a=ac(),o=a.createOscillator(),g=a.createGain(),t=a.currentTime+t0;o.type=type;o.frequency.setValueAtTime(f,t);if(slide)o.frequency.exponentialRampToValueAtTime(Math.max(30,f*slide),t+d);g.gain.setValueAtTime(v,t);g.gain.exponentialRampToValueAtTime(.0008,t+d);o.connect(g);g.connect(MG);o.start(t);o.stop(t+d+.03)}catch(e){}}
+function noise(d,f=2000,v=.06,q=1,t0=0,type='bandpass'){try{const a=ac(),n=Math.floor(a.sampleRate*d),b=a.createBuffer(1,n,a.sampleRate),x=b.getChannelData(0);for(let i=0;i<n;i++)x[i]=Math.random()*2-1;const s=a.createBufferSource(),fl=a.createBiquadFilter(),g=a.createGain(),t=a.currentTime+t0;s.buffer=b;fl.type=type;fl.frequency.value=f;fl.Q.value=q;g.gain.setValueAtTime(v,t);g.gain.exponentialRampToValueAtTime(.0008,t+d);s.connect(fl);fl.connect(g);g.connect(MG);s.start(t)}catch(e){}}
+function beep(f=440,d=.18){tone(f,d,'square',.08)}
+const arp=(notes,type='triangle',v=.1,gap=.11)=>notes.forEach((n,i)=>tone(n,.22,type,v,i*gap));
+const SFX={
+ tap:()=>tone(720,.05,'sine',.05),
+ pop:()=>tone(480,.14,'sine',.12,0,2),
+ start:()=>arp([262,330,392,523]),
+ ok:()=>{tone(660,.1,'triangle',.1);tone(880,.18,'triangle',.1,.1)},
+ err:()=>tone(190,.28,'sawtooth',.09,0,.6),
+ ding:()=>{tone(988,.14,'sine',.1);tone(1319,.3,'sine',.1,.12)},
+ win:()=>arp([523,659,784,1047,1319],'triangle',.11,.12),
+ deploy:()=>{tone(1180,.5,'sine',.08,0,.75);for(let i=0;i<9;i++){noise(.09,220+i*18,.12,1,.25+i*.14,'lowpass');tone(70+i*6,.08,'sawtooth',.05,.25+i*.14)}},
+ sel_wrench:()=>{tone(900,.05,'square',.05);tone(1250,.05,'square',.05,.06)},
+ sel_drop:()=>tone(520,.12,'sine',.1,0,1.6),
+ sel_bulb:()=>tone(1500,.08,'sine',.08),
+ sel_sponge:()=>noise(.1,1500,.05,2),
+ sel_water:()=>noise(.12,5000,.05,.7,0,'highpass'),
+ sel_towel:()=>noise(.12,800,.05,.8),
+ fix_wrench:()=>{for(let i=0;i<5;i++){tone(1000+i*90,.05,'square',.06,i*.12);noise(.04,3000,.06,2,i*.12)}},
+ fix_drop:()=>{for(let i=0;i<4;i++){tone(300+i*40,.12,'sine',.12,i*.15,2);noise(.1,2500,.03,2,i*.15)}},
+ fix_bulb:()=>{tone(110,.4,'sawtooth',.05);tone(1800,.1,'sine',.06,.1);tone(1800,.1,'sine',.06,.28);tone(900,.12,'square',.08,.5,2)},
+ horn:()=>{tone(330,.55,'sawtooth',.07);tone(392,.55,'sawtooth',.07)},
+ lamp:()=>{tone(1000,.06,'sine',.08);tone(1500,.09,'sine',.08,.07)},
+ s_sponge:()=>noise(.09,1600+Math.random()*900,.07,4),
+ s_water:()=>noise(.14,4500,.05,.7,0,'highpass'),
+ s_towel:()=>noise(.15,700+Math.random()*300,.06,.8)
+};
+function sfx(n,a){try{if(n==='letter')return tone(520+a*110,.2,'triangle',.12);if(n==='thr'){for(let i=0;i<=a;i++){noise(.09,200+a*30,.12,1,i*.13,'lowpass');tone(55+a*22,.1,'sawtooth',.05,i*.13)}return}
+ (SFX[n]||SFX.tap)()}catch(e){}}
+document.addEventListener('pointerdown',e=>{const b=e.target.closest('button');if(b&&!b.disabled)sfx('tap')},true);
 </script>
 </body>
 </html>
